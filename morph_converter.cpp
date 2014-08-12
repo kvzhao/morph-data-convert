@@ -20,18 +20,32 @@ int main (int argc, char **argv) {
         cerr << "Error opening MAT file " << argv[1] << "!\n";
         return EXIT_FAILURE;
     }
-    
-    matvar = Mat_VarReadInfo(matfp,"x");
+
+    // find a specific variable
+    matvar = Mat_VarRead(matfp, "dataset_age");
+    void *data_ptr;
+    int *start, *stride, *edge;
+
     if ( NULL == matvar ) {
-        cerr << "Variable ’x’ not found, or error reading MAT file\n";
+        cerr << "variable dataset_age cant not find\n" ;
     } else {
-        if ( !matvar->isComplex )
-            cerr << "Variable ’x’ is not complex!\n";
-        if ( matvar->rank != 2 ||
-                (matvar->dims[0] > 1 && matvar->dims[1] > 1) )
-            cerr << "Variable ’x’ is not a vector!\n";
-        Mat_VarFree(matvar);
+        cout << "find " << matvar->name << " array!\n";
+        int len = Mat_VarGetSize(matvar)/sizeof(double);
+        cout << "Var size is " << Mat_VarGetSize(matvar) << ", len is " <<  len << "\n";
+        cout << "# of Fields: " << Mat_VarGetNumberOfFields(matvar) << "\n";
+        cout << matvar->data << " with size = " << *matvar->dims << "\n";
+        cout << "bytes : " << matvar->nbytes << "\n";
+        cout << "rank : " << matvar->rank<< "\n";
+
+        double *label = (double*) matvar->data;
+        ofstream of_ageLabel("age_label.txt", std::ofstream::out); 
+
+        for (int i=0; i < len; i++) {
+            of_ageLabel << *(label + i) << "\n";
+        }
+        of_ageLabel.close();
     }
+    Mat_VarFree(matvar);
 
     Mat_Close(matfp);
     return EXIT_SUCCESS;
