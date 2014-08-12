@@ -7,13 +7,20 @@
 #include <fstream>
 #include <stdlib.h>
 
+// Matlab mat file IO
 #include <matio.h>
 
 using namespace std;
 
+const int kMORPH_FACE_W = 40;
+const int kMORPH_FACE_H = 48;
+const int kMORPHImageNBytes = kMORPH_FACE_W  * kMORPH_FACE_H * 8; 
+const int kMORPHBatchSize = 54706;
+const int kMORPHTrainBatches = 8;
+
 int main (int argc, char **argv) {
     mat_t *matfp;
-    matvar_t *matvar;
+    matvar_t *label_var, *img_var;
     matfp = Mat_Open(argv[1],MAT_ACC_RDONLY);
 
     if ( NULL == matfp ) {
@@ -22,30 +29,40 @@ int main (int argc, char **argv) {
     }
 
     // find a specific variable
-    matvar = Mat_VarRead(matfp, "dataset_age");
+    label_var = Mat_VarRead(matfp, "dataset_age");
+
     void *data_ptr;
-    int *start, *stride, *edge;
 
-    if ( NULL == matvar ) {
-        cerr << "variable dataset_age cant not find\n" ;
+    if ( NULL == label_var ) {
+        cerr << "variable dataset_age can not be found\n" ;
     } else {
-        cout << "find " << matvar->name << " array!\n";
-        int len = Mat_VarGetSize(matvar)/sizeof(double);
-        cout << "Var size is " << Mat_VarGetSize(matvar) << ", len is " <<  len << "\n";
-        cout << "# of Fields: " << Mat_VarGetNumberOfFields(matvar) << "\n";
-        cout << matvar->data << " with size = " << *matvar->dims << "\n";
-        cout << "bytes : " << matvar->nbytes << "\n";
-        cout << "rank : " << matvar->rank<< "\n";
+        cout << "find " << label_var->name << " array!\n";
+        int len = Mat_VarGetSize(label_var)/sizeof(double);
+        cout << "Var size is " << Mat_VarGetSize(label_var) << ", len is " <<  len << "\n";
+        cout << "# of Fields: " << Mat_VarGetNumberOfFields(label_var) << "\n";
+        cout << label_var->data << " with size = " << *label_var->dims << "\n";
+        cout << "bytes : " << label_var->nbytes << "\n";
+        cout << "rank : " << label_var->rank<< "\n";
 
-        double *label = (double*) matvar->data;
-        ofstream of_ageLabel("age_label.txt", std::ofstream::out); 
-
+        char *label = (char*) label_var->data;
+        ofstream of_ageLabel("age_label.bin", ios::out | ios::binary); 
+        of_ageLabel.write(label, kMORPHBatchSize * 8);
+        /*
         for (int i=0; i < len; i++) {
+            // Readable data
             of_ageLabel << *(label + i) << "\n";
-        }
+        }*/
         of_ageLabel.close();
     }
-    Mat_VarFree(matvar);
+    Mat_VarFree(label_var);
+/*
+    // !! NOTICE: READ IMAGES COULD COST A LOT OF TIME !! //
+    img_var   = Mat_VarRead(matfp, "dataset_im");
+    if (NULL == img_var ) {
+        cerr << "variable dataset_img can not be found!\n";
+   }
+    Mat_VarFree(img_var);
+*/
 
     Mat_Close(matfp);
     return EXIT_SUCCESS;
